@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DML Italia — Gestione Budget</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:        #0d0f14;
+    --surface:   #151820;
+    --border:    #252a36;
+    --border-hi: #3a4155;
+    --accent:    #e8b84b;
+    --text:      #e4e8f0;
+    --muted:     #7a8299;
+    --wa-green:  #25d366;
+    --radius:    10px;
+  }
+  html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; }
+  body { display: flex; flex-direction: column; align-items: center; padding: 40px 16px 60px; }
+  header { width: 100%; max-width: 520px; text-align: center; margin-bottom: 36px; }
+  .logo-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px; }
+  .logo-badge { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-weight: 500; font-size: 13px; color: #0d0f14; }
+  header h1 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+  header p { font-size: 13px; color: var(--muted); margin-top: 4px; font-family: 'DM Mono', monospace; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 520px; position: relative; overflow: hidden; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), #e07b2a, var(--accent)); }
+  .field-group { display: flex; flex-direction: column; gap: 18px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-family: 'DM Mono', monospace; }
+  select, input { background: #1a1d27; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 12px 14px; width: 100%; outline: none; font-family: inherit; font-size: 15px; }
+  select:focus, input:focus { border-color: var(--accent); }
+  input:disabled { color: var(--muted); background: #13161e; cursor: not-allowed; }
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+  .num-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .wide { grid-column: 1 / -1; }
+  .btn-genera { width: 100%; padding: 16px; margin-top: 28px; background: var(--accent); border: none; border-radius: var(--radius); font-weight: 700; font-size: 15px; cursor: pointer; color: #0d0f14; transition: opacity 0.2s; }
+  .btn-genera:hover { opacity: 0.9; }
+  #result-box { margin-top: 20px; background: #0d1117; border: 1px solid var(--border-hi); border-radius: var(--radius); display: none; }
+  .result-header { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border-hi); }
+  .btn-wa { background: var(--wa-green); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; }
+  #msg-output { padding: 16px; font-family: 'DM Mono', monospace; font-size: 14px; line-height: 1.5; color: #e4e8f0; white-space: pre-wrap; }
+  .loading-text { font-size: 12px; color: var(--accent); font-family: 'DM Mono', monospace; text-align: center; display: none; }
+  @media (max-width: 440px) { .num-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-row">
+    <div class="logo-badge">DML</div>
+    <h1>DML Italia</h1>
+  </div>
+  <p>Comunicazione Budget e Chiusure</p>
+</header>
+
+<div class="card">
+  <div class="field-group">
+    <div class="field">
+      <label>Punto vendita</label>
+      <select id="pv" onchange="selezionaPuntoVendita()">
+        <option value="">— Seleziona —</option>
+        <option value="Fano">Fano</option>
+        <option value="Monsano">Monsano</option>
+        <option value="Osimo">Osimo</option>
+        <option value="Macerata">Macerata</option>
+        <option value="Civitanova">Civitanova</option>
+        <option value="Pesaro">Pesaro</option>
+        <option value="Foligno">Foligno</option>
+      </select>
+    </div>
+
+    <div id="loading" class="loading-text">Aggiornamento budget in corso...</div>
+    <div class="divider"></div>
+
+    <div class="num-grid">
+      <div class="field wide">
+        <label>Week Numero</label>
+        <input type="text" id="week_num" readonly disabled style="background:#13161e;">
+      </div>
+      
+      <div class="field">
+        <label>Budget Week (€)</label>
+        <input type="text" id="budget_week" readonly disabled>
+      </div>
+
+      <div class="field">
+        <label>Budget W.E. (€)</label>
+        <input type="text" id="budget_we" readonly disabled>
+      </div>
+
+      <div class="field">
+        <label>Realizzato Week (€)</label>
+        <input type="number" id="realizzato_week" step="0.01" placeholder="0.00">
+      </div>
+
+      <div class="field">
+        <label>Realizzato W.E. (€)</label>
+        <input type="number" id="realizzato_we" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-genera" onclick="generaMessaggio()">Genera Messaggio WhatsApp</button>
+
+  <div id="result-box">
+    <div class="result-header">
+      <span style="font-size: 11px; color: var(--muted)">Anteprima Testo</span>
+      <button class="btn-wa" onclick="inviaWhatsApp()">Invia su WhatsApp</button>
+    </div>
+    <pre id="msg-output"></pre>
+  </div>
+</div>
+
+<script>
+  // =================================================================
+  // INSERISCI L'ID DEL TUO FOGLIO GOOGLE DI SEGUITO TRA LE VIRGOLETTE
+  // =================================================================
+  const SPREADSHEET_ID = "INSERISCI_QUI_IL_TUO_ID_DEL_FOGLIO";
+  // =================================================================
+
+  let datiBudgetGlobali = {};
+  let weekCorrente globale = "—";
+
+  // Scarica i dati dal Foglio Google appena la pagina viene aperta
+  async function ottieniDatiDaGoogle() {
+    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Budget`;
+    try {
+      document.getElementById('loading').style.display = 'block';
+      const risposta = await fetch(url);
+      const testo = await risposta.text();
+      // Pulisce il formato strano che restituisce l'API di Google
+      const jsonReale = JSON.parse(testo.substr(47).slice(0, -2));
+      const righe = jsonReale.table.rows;
+
+      righe.forEach((riga, index) => {
+        const pdv = riga.c[0] ? riga.c[0].v : null;
+        const bWeek = riga.c[1] ? riga.c[1].v : 0;
+        const bWe = riga.c[2] ? riga.c[2].v : 0;
+        const wkNum = riga.c[3] ? riga.c[3].v : null;
+
+        if (pdv) {
+          datiBudgetGlobali[pdv] = { week: bWeek, we: bWe };
+        }
+        if (index === 0 && wkNum) {
+          weekCorrente = wkNum.toString();
+          document.getElementById('week_num').value = weekCorrente;
+        }
+      });
+      document.getElementById('loading').style.display = 'none';
+    } catch (errore) {
+      console.error("Errore nel recupero dati:", errore);
+      document.getElementById('loading').textContent = "Errore di connessione al database budget.";
+    }
+  }
+
+  function selezionaPuntoVendita() {
+    const pv = document.getElementById('pv').value;
+    if (pv && datiBudgetGlobali[pv]) {
+      document.getElementById('budget_week').value = datiBudgetGlobali[pv].week.toLocaleString('it-IT', { minimumFractionDigits: 2 });
+      document.getElementById('budget_we').value = datiBudgetGlobali[pv].we.toLocaleString('it-IT', { minimumFractionDigits: 2 });
+    } else {
+      document.getElementById('budget_week').value = '';
+      document.getElementById('budget_we').value = '';
+    }
+  }
+
+  function formattaInputEuro(valore) {
+    return parseFloat(valore || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function generaMessaggio() {
+    const pv = document.getElementById('pv').value;
+    if (!pv) { alert("Seleziona il punto vendita!"); return; }
+
+    const budgetWeek = document.getElementById('budget_week').value || '0,00';
+    const budgetWe = document.getElementById('budget_we').value || '0,00';
+    const rWeekRaw = document.getElementById('realizzato_week').value;
+    const rWeRaw = document.getElementById('realizzato_we').value;
+
+    let msg = `📍 PDV: ${pv}\n▪️ Week Numero: ${weekCorrente}\n`;
+
+    if (!rWeekRaw && !rWeRaw) {
+      const oggi = new Date().getDay(); 
+      if (oggi === 5 || hoy === 6) {
+        msg += `▪️ Budget W.E.: € ${budgetWe}`;
+      } else {
+        msg += `▪️ Budget Week: € ${budgetWeek}`;
+      }
+    } else {
+      msg += `▪️ Budget Week: € ${budgetWeek}\n`;
+      msg += `▪️ Realizzati Week: € ${formattaInputEuro(rWeekRaw)}\n`;
+      msg += `▪️ Budget W.E.: € ${budgetWe}\n`;
+      msg += `▪️ Realizzati W.E.: € ${formattaInputEuro(rWeRaw)}`;
+    }
+
+    document.getElementById('msg-output').textContent = msg;
+    document.getElementById('result-box').style.display = 'block';
+    document.getElementById('result-box').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function inviaWhatsApp() {
+    const testo = document.getElementById('msg-output').textContent;
+    window.open("https://wa.me/?text=" + encodeURIComponent(testo), '_blank');
+  }
+
+  // Carica i dati appena si apre l'app
+  ottieniDatiDaGoogle();
+</script>
+
+</body>
+</html>
