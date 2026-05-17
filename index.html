@@ -115,7 +115,6 @@
 </div>
 
 <script>
-  // ID del tuo foglio Google integrato correttamente
   const SPREADSHEET_ID = "1Hsynld8D5tjVhvehLPuQ6vWArq8f445gHQZI3MyAq-A";
 
   let datiBudgetGlobali = {};
@@ -170,28 +169,42 @@
     const pv = document.getElementById('pv').value;
     if (!pv) { alert("Seleziona il punto vendita!"); return; }
 
-    const budgetWeek = document.getElementById('budget_week').value || '0,00';
-    const budgetWe = document.getElementById('budget_we').value || '0,00';
+    const budgetWeekNumero = datiBudgetGlobali[pv] ? datiBudgetGlobali[pv].week : 0;
+    const budgetWeNumero = datiBudgetGlobali[pv] ? datiBudgetGlobali[pv].we : 0;
+
+    const budgetWeekStr = document.getElementById('budget_week').value || '0,00';
+    const budgetWeStr = document.getElementById('budget_we').value || '0,00';
+    
     const rWeekRaw = document.getElementById('realizzato_week').value;
     const rWeRaw = document.getElementById('realizzato_we').value;
 
-    let msg = `📍 PDV: ${pv}\n▪️ Week Numero: ${weekCorrente}\n`;
+    const rWeekNumero = parseFloat(rWeekRaw || 0);
+    const rWeNumero = parseFloat(rWeRaw || 0);
 
-    // Se i campi dei realizzati sono vuoti (Invio Lunedì o Venerdì)
+    let msg = `📍 *PDV:* ${pv}\n📅 *Week Numero:* ${weekCorrente}\n\n`;
+
+    // CASO 1: Invio inizio o metà settimana (Senza realizzati)
     if (!rWeekRaw && !rWeRaw) {
       const oggi = new Date().getDay(); 
       if (oggi === 5 || oggi === 6) {
-        msg += `▪️ Budget W.E.: € ${budgetWe}`;
+        msg += `🎯 *Budget W.E.:* € ${budgetWeStr}`;
       } else {
-        msg += `▪️ Budget Week: € ${budgetWeek}`;
+        msg += `🎯 *Budget Week:* € ${budgetWeekStr}`;
       }
     } 
-    // Se è domenica sera e hanno compilato i realizzati
+    // CASO 2: Domenica Sera (Chiusura totale con icone Verde/Rosso)
     else {
-      msg += `▪️ Budget Week: € ${budgetWeek}\n`;
-      msg += `▪️ Realizzati Week: € ${formattaInputEuro(rWeekRaw)}\n`;
-      msg += `▪️ Budget W.E.: € ${budgetWe}\n`;
-      msg += `▪️ Realizzati W.E.: € ${formattaInputEuro(rWeRaw)}`;
+      // Controllo matematico per l'icona Week
+      const iconaWeek = (rWeekNumero >= budgetWeekNumero) ? "🟢 [TARGET RAGGIUNTO]" : "🔴 [NON RAGGIUNTO]";
+      // Controllo matematico per l'icona Weekend
+      const iconaWe = (rWeNumero >= budgetWeNumero) ? "🟢 [TARGET RAGGIUNTO]" : "🔴 [NON RAGGIUNTO]";
+
+      msg += `📋 *RIEPILOGO SETTIMANALE*\n`;
+      msg += `▪️ *Budget Week:* € ${budgetWeekStr}\n`;
+      msg += `${iconaWeek} *Realizzato Week:* € ${formattaInputEuro(rWeekRaw)}\n\n`;
+      msg += `📋 *RIEPILOGO WEEKEND*\n`;
+      msg += `▪️ *Budget W.E.:* € ${budgetWeStr}\n`;
+      msg += `${iconaWe} *Realizzato W.E.:* € ${formattaInputEuro(rWeRaw)}`;
     }
 
     document.getElementById('msg-output').textContent = msg;
