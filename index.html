@@ -115,23 +115,18 @@
 </div>
 
 <script>
-  // =================================================================
-  // INSERISCI L'ID DEL TUO FOGLIO GOOGLE DI SEGUITO TRA LE VIRGOLETTE
-  // =================================================================
+  // ID del tuo foglio Google integrato correttamente
   const SPREADSHEET_ID = "1Hsynld8D5tjVhvehLPuQ6vWArq8f445gHQZI3MyAq-A";
-  // =================================================================
 
   let datiBudgetGlobali = {};
-  let weekCorrente globale = "—";
+  let weekCorrente = "—";
 
-  // Scarica i dati dal Foglio Google appena la pagina viene aperta
   async function ottieniDatiDaGoogle() {
     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Budget`;
     try {
       document.getElementById('loading').style.display = 'block';
       const risposta = await fetch(url);
       const testo = await risposta.text();
-      // Pulisce il formato strano che restituisce l'API di Google
       const jsonReale = JSON.parse(testo.substr(47).slice(0, -2));
       const righe = jsonReale.table.rows;
 
@@ -152,7 +147,7 @@
       document.getElementById('loading').style.display = 'none';
     } catch (errore) {
       console.error("Errore nel recupero dati:", errore);
-      document.getElementById('loading').textContent = "Errore di connessione al database budget.";
+      document.getElementById('loading').textContent = "Errore di connessione al database budget. Verifica la condivisione del foglio.";
     }
   }
 
@@ -182,14 +177,17 @@
 
     let msg = `📍 PDV: ${pv}\n▪️ Week Numero: ${weekCorrente}\n`;
 
+    // Se i campi dei realizzati sono vuoti (Invio Lunedì o Venerdì)
     if (!rWeekRaw && !rWeRaw) {
       const oggi = new Date().getDay(); 
-      if (oggi === 5 || hoy === 6) {
+      if (oggi === 5 || oggi === 6) {
         msg += `▪️ Budget W.E.: € ${budgetWe}`;
       } else {
         msg += `▪️ Budget Week: € ${budgetWeek}`;
       }
-    } else {
+    } 
+    // Se è domenica sera e hanno compilato i realizzati
+    else {
       msg += `▪️ Budget Week: € ${budgetWeek}\n`;
       msg += `▪️ Realizzati Week: € ${formattaInputEuro(rWeekRaw)}\n`;
       msg += `▪️ Budget W.E.: € ${budgetWe}\n`;
@@ -206,7 +204,6 @@
     window.open("https://wa.me/?text=" + encodeURIComponent(testo), '_blank');
   }
 
-  // Carica i dati appena si apre l'app
   ottieniDatiDaGoogle();
 </script>
 
