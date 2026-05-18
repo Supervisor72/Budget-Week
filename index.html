@@ -153,8 +153,8 @@
   function selezionaPuntoVendita() {
     const pv = document.getElementById('pv').value;
     if (pv && datiBudgetGlobali[pv]) {
-      document.getElementById('budget_week').value = datiBudgetGlobali[pv].week.toLocaleString('it-IT', { minimumFractionDigits: 2 });
-      document.getElementById('budget_we').value = datiBudgetGlobali[pv].we.toLocaleString('it-IT', { minimumFractionDigits: 2 });
+      document.getElementById('budget_week').value = datiBudgetGlobali[pv].week.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
+      document.getElementById('budget_we').value = datiBudgetGlobali[pv].we.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
     } else {
       document.getElementById('budget_week').value = '';
       document.getElementById('budget_we').value = '';
@@ -162,7 +162,7 @@
   }
 
   function formattaInputEuro(valore) {
-    return parseFloat(valore || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return parseFloat(valore || 0).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " + Iva";
   }
 
   function generaMessaggio() {
@@ -172,8 +172,8 @@
     const budgetWeekNumero = datiBudgetGlobali[pv] ? datiBudgetGlobali[pv].week : 0;
     const budgetWeNumero = datiBudgetGlobali[pv] ? datiBudgetGlobali[pv].we : 0;
 
-    const budgetWeekStr = document.getElementById('budget_week').value || '0,00';
-    const budgetWeStr = document.getElementById('budget_we').value || '0,00';
+    const budgetWeekStr = budgetWeekNumero.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
+    const budgetWeStr = budgetWeNumero.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
     
     const rWeekRaw = document.getElementById('realizzato_week').value;
     const rWeRaw = document.getElementById('realizzato_we').value;
@@ -192,11 +192,9 @@
         msg += `🎯 *Budget Week:* € ${budgetWeekStr}`;
       }
     } 
-    // CASO 2: Domenica Sera (Chiusura totale con icone Verde/Rosso)
+    // CASO 2: Domenica Sera (Chiusura totale con "+ Iva" ovunque)
     else {
-      // Controllo matematico per l'icona Week
       const iconaWeek = (rWeekNumero >= budgetWeekNumero) ? "🟢 [TARGET RAGGIUNTO]" : "🔴 [NON RAGGIUNTO]";
-      // Controllo matematico per l'icona Weekend
       const iconaWe = (rWeNumero >= budgetWeNumero) ? "🟢 [TARGET RAGGIUNTO]" : "🔴 [NON RAGGIUNTO]";
 
       msg += `📋 *RIEPILOGO SETTIMANALE*\n`;
