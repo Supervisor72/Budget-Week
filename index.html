@@ -92,7 +92,7 @@
       </div>
 
       <div class="field wide" id="field_glimpse_wrapper" style="display: none;">
-        <label>Glimpse The Light (€)</label>
+        <label>Glimpse The Light W.e. (€)</label>
         <input type="text" id="glimpse_light" readonly disabled>
       </div>
 
@@ -206,10 +206,10 @@
 
     // CASO 1: Invio inizio o metà settimana (Senza realizzati)
     if (!rWeekRaw && !rWeRaw) {
-      // Se è VENERDÌ mostra Budget W.E. e sotto Glimpse The Light
+      // Se è VENERDÌ mostra Budget W.E. e sotto Glimpse The Light W.e.
       if (esVenerdi) {
         msg += `🎯 *Budget W.E.:* € ${budgetWeStr}\n`;
-        msg += `✨ *Glimpse The Light:* € ${glimpseStr}`;
+        msg += `✨ *Glimpse The Light W.e.:* € ${glimpseStr}`;
       } else {
         msg += `🎯 *Budget Week:* € ${budgetWeekStr}`;
       }
