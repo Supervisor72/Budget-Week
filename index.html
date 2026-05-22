@@ -92,7 +92,7 @@
       </div>
 
       <div class="field wide" id="field_glimpse_wrapper" style="display: none;">
-        <label>Glimpse The Light W.e. (€)</label>
+        <label>Glimpse The Light (€)</label>
         <input type="text" id="glimpse_light" readonly disabled>
       </div>
 
@@ -125,11 +125,25 @@
   let datiBudgetGlobali = {};
   let weekCorrente = "—";
   
-  // Controllo se OGGI è venerdì (giorno 5 della settimana)
   const oggiGiorno = new Date().getDay();
   const esVenerdi = (oggiGiorno === 5);
 
+  // Funzione per calcolare in automatico la settimana ISO corrente
+  function calcolaNumeroSettimana() {
+    const oggi = new Date();
+    const target = new Date(oggi.valueOf());
+    const giornoNuovo = (oggi.getDay() + 6) % 7;
+    target.setDate(target.getDate() - giornoNuovo + 3);
+    const primaSettimana = new Date(target.getFullYear(), 0, 4);
+    const dGg = (target - primaSettimana) / 86400000;
+    return 1 + Math.round(dGg / 7);
+  }
+
   async function ottieniDatiDaGoogle() {
+    // Imposta automaticamente la week corrente al caricamento
+    weekCorrente = calcolaNumeroSettimana().toString();
+    document.getElementById('week_num').value = weekCorrente;
+
     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Budget`;
     try {
       document.getElementById('loading').style.display = 'block';
@@ -138,24 +152,17 @@
       const jsonReale = JSON.parse(testo.substr(47).slice(0, -2));
       const righe = jsonReale.table.rows;
 
-      righe.forEach((riga, index) => {
+      righe.forEach((riga) => {
         const pdv = riga.c[0] ? riga.c[0].v : null;
         const bWeek = riga.c[1] ? riga.c[1].v : 0;
         const bWe = riga.c[2] ? riga.c[2].v : 0;
-        const wkNum = riga.c[3] ? riga.c[3].v : null;
-        // Colonna E (Indice 4): Nuovo valore Glimpse The Light
-        const glimpseVal = riga.c[4] ? riga.c[4].v : 0;
+        const glimpseVal = riga.c[4] ? riga.c[4].v : 0; // Colonna E
 
         if (pdv) {
           datiBudgetGlobali[pdv] = { week: bWeek, we: bWe, glimpse: glimpseVal };
         }
-        if (index === 0 && wkNum) {
-          weekCorrente = wkNum.toString();
-          document.getElementById('week_num').value = weekCorrente;
-        }
       });
       
-      // Se è venerdì, mostriamo il campo nascosto nell'interfaccia grafica
       if (esVenerdi) {
         document.getElementById('field_glimpse_wrapper').style.display = 'block';
       }
@@ -163,7 +170,7 @@
       document.getElementById('loading').style.display = 'none';
     } catch (errore) {
       console.error("Errore nel recupero dati:", errore);
-      document.getElementById('loading').textContent = "Errore di connessione al database budget. Verifica la condivisione del foglio.";
+      document.getElementById('loading').textContent = "Errore di connessione al database budget.";
     }
   }
 
@@ -204,18 +211,14 @@
 
     let msg = `📍 *PDV:* ${pv}\n📅 *Week Numero:* ${weekCorrente}\n\n`;
 
-    // CASO 1: Invio inizio o metà settimana (Senza realizzati)
     if (!rWeekRaw && !rWeRaw) {
-      // Se è VENERDÌ mostra Budget W.E. e sotto Glimpse The Light W.e.
       if (esVenerdi) {
         msg += `🎯 *Budget W.E.:* € ${budgetWeStr}\n`;
-        msg += `✨ *Glimpse The Light W.e.:* € ${glimpseStr}`;
+        msg += `✨ *Glimpse The Light:* € ${glimpseStr}`;
       } else {
         msg += `🎯 *Budget Week:* € ${budgetWeekStr}`;
       }
-    } 
-    // CASO 2: Domenica Sera (Chiusura totale standard)
-    else {
+    } else {
       const iconaWeek = (rWeekNumero >= budgetWeekNumero) ? "🟢 [TARGET RAGGIUNTO]" : "🔴 [NON RAGGIUNTO]";
       const iconaWe = (rWeNumero >= budgetWeNumero) ? "🟢 [TARGET RAGGIUNTO]" : "🔴 [NON RAGGIUNTO]";
 
