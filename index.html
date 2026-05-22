@@ -91,6 +91,11 @@
         <input type="text" id="budget_we" readonly disabled>
       </div>
 
+      <div class="field wide" id="field_glimpse_wrapper" style="display: none;">
+        <label>Glimpse The Light (€)</label>
+        <input type="text" id="glimpse_light" readonly disabled>
+      </div>
+
       <div class="field">
         <label>Realizzato Week (€)</label>
         <input type="number" id="realizzato_week" step="0.01" placeholder="0.00">
@@ -119,6 +124,10 @@
 
   let datiBudgetGlobali = {};
   let weekCorrente = "—";
+  
+  // Controllo se OGGI è venerdì (giorno 5 della settimana)
+  const oggiGiorno = new Date().getDay();
+  const esVenerdi = (oggiGiorno === 5);
 
   async function ottieniDatiDaGoogle() {
     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Budget`;
@@ -134,15 +143,23 @@
         const bWeek = riga.c[1] ? riga.c[1].v : 0;
         const bWe = riga.c[2] ? riga.c[2].v : 0;
         const wkNum = riga.c[3] ? riga.c[3].v : null;
+        // Colonna E (Indice 4): Nuovo valore Glimpse The Light
+        const glimpseVal = riga.c[4] ? riga.c[4].v : 0;
 
         if (pdv) {
-          datiBudgetGlobali[pdv] = { week: bWeek, we: bWe };
+          datiBudgetGlobali[pdv] = { week: bWeek, we: bWe, glimpse: glimpseVal };
         }
         if (index === 0 && wkNum) {
           weekCorrente = wkNum.toString();
           document.getElementById('week_num').value = weekCorrente;
         }
       });
+      
+      // Se è venerdì, mostriamo il campo nascosto nell'interfaccia grafica
+      if (esVenerdi) {
+        document.getElementById('field_glimpse_wrapper').style.display = 'block';
+      }
+      
       document.getElementById('loading').style.display = 'none';
     } catch (errore) {
       console.error("Errore nel recupero dati:", errore);
@@ -155,9 +172,11 @@
     if (pv && datiBudgetGlobali[pv]) {
       document.getElementById('budget_week').value = datiBudgetGlobali[pv].week.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
       document.getElementById('budget_we').value = datiBudgetGlobali[pv].we.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
+      document.getElementById('glimpse_light').value = datiBudgetGlobali[pv].glimpse.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
     } else {
       document.getElementById('budget_week').value = '';
       document.getElementById('budget_we').value = '';
+      document.getElementById('glimpse_light').value = '';
     }
   }
 
@@ -171,9 +190,11 @@
 
     const budgetWeekNumero = datiBudgetGlobali[pv] ? datiBudgetGlobali[pv].week : 0;
     const budgetWeNumero = datiBudgetGlobali[pv] ? datiBudgetGlobali[pv].we : 0;
+    const glimpseNumero = datiBudgetGlobali[pv] ? datiBudgetGlobali[pv].glimpse : 0;
 
     const budgetWeekStr = budgetWeekNumero.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
     const budgetWeStr = budgetWeNumero.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
+    const glimpseStr = glimpseNumero.toLocaleString('it-IT', { minimumFractionDigits: 2 }) + " + Iva";
     
     const rWeekRaw = document.getElementById('realizzato_week').value;
     const rWeRaw = document.getElementById('realizzato_we').value;
@@ -185,14 +206,15 @@
 
     // CASO 1: Invio inizio o metà settimana (Senza realizzati)
     if (!rWeekRaw && !rWeRaw) {
-      const oggi = new Date().getDay(); 
-      if (oggi === 5 || oggi === 6) {
-        msg += `🎯 *Budget W.E.:* € ${budgetWeStr}`;
+      // Se è VENERDÌ mostra Budget W.E. e sotto Glimpse The Light
+      if (esVenerdi) {
+        msg += `🎯 *Budget W.E.:* € ${budgetWeStr}\n`;
+        msg += `✨ *Glimpse The Light:* € ${glimpseStr}`;
       } else {
         msg += `🎯 *Budget Week:* € ${budgetWeekStr}`;
       }
     } 
-    // CASO 2: Domenica Sera (Chiusura totale con "+ Iva" ovunque)
+    // CASO 2: Domenica Sera (Chiusura totale standard)
     else {
       const iconaWeek = (rWeekNumero >= budgetWeekNumero) ? "🟢 [TARGET RAGGIUNTO]" : "🔴 [NON RAGGIUNTO]";
       const iconaWe = (rWeNumero >= budgetWeNumero) ? "🟢 [TARGET RAGGIUNTO]" : "🔴 [NON RAGGIUNTO]";
